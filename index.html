@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TurniBus</title>
+    <script src="https://cdn.jsdelivr.net"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f9; }
+        .tab { display: none; }
+        .active { display: block; }
+        nav { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; }
+        button { padding: 10px; border-radius: 5px; border: none; background: #007bff; color: white; }
+        input { display: block; margin: 10px 0; padding: 10px; width: 100%; border: 1px solid #ccc; border-radius: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    </style>
+</head>
+<body>
+
+    <h1 style="color: #007bff;">TurniBus 🚌</h1>
+
+    <nav>
+        <button onclick="showTab('turni')">Turni</button>
+        <button onclick="showTab('monteore')">Monte Ore</button>
+        <button onclick="showTab('bustepaga')">Buste Paga</button>
+    </nav>
+
+    <!-- SCHERMATA TURNI -->
+    <div id="turni" class="tab active">
+        <h3>Inserimento Turno</h3>
+        <input type="date" id="dataTurno">
+        <div id="containerRiprese">
+            <div class="ripresa" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;">
+                <input type="text" placeholder="Linea">
+                <input type="time" placeholder="Inizio">
+                <input type="time" placeholder="Fine">
+            </div>
+        </div>
+        <button onclick="aggiungiRipresa()" style="background: #28a745;">+ Aggiungi Ripresa</button>
+        <hr>
+        <button onclick="salva('Lavoro')" style="width: 100%; margin-bottom: 5px;">Salva Lavoro</button>
+        <button onclick="salva('Ferie')" style="width: 100%; background: #17a2b8;">Segna Ferie (6.5h)</button>
+    </div>
+
+    <!-- SCHERMATA MONTE ORE -->
+    <div id="monteore" class="tab">
+        <h3>Resoconto Ore</h3>
+        <p>Qui vedrai i tuoi calcoli mensili...</p>
+        <button onclick="alert('Funzione PDF in arrivo!')">Scarica PDF Mese</button>
+    </div>
+
+    <!-- SCHERMATA BUSTE PAGA -->
+    <div id="bustepaga" class="tab">
+        <h3>Buste Paga (14 Mesi)</h3>
+        <table>
+            <tr><th>Mese</th><th>Netto (€)</th><th>Lordo (€)</th></tr>
+            <script>
+                const mesi = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre','13esima','14esima'];
+                mesi.forEach(m => document.write(`<tr><td>${m}</td><td><input type="number" placeholder="0"></td><td><input type="number" placeholder="0"></td></tr>`));
+            </script>
+        </table>
+    </div>
+
+    <script>
+        // Collegamento Supabase
+        const _supabase = supabase.createClient('https://dvcoszwhurmseubyyxel.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y');
+
+        function showTab(id) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function aggiungiRipresa() {
+            const div = document.createElement('div');
+            div.className = 'ripresa';
+            div.style = "border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;";
+            div.innerHTML = '<input type="text" placeholder="Linea"><input type="time"><input type="time">';
+            document.getElementById('containerRiprese').appendChild(div);
+        }
+
+        async function salva(tipo) {
+            alert("Salvato: " + tipo);
+            // Qui inseriremo la logica di invio a Supabase
+        }
+    </script>
+</body>
+</html>
