@@ -4,141 +4,172 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurniBus</title>
+    <!-- Caricamento corretto di Supabase -->
     <script src="https://cdn.jsdelivr.net"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f4f9; }
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f9; max-width: 500px; margin: auto; }
         .tab { display: none; }
         .active { display: block; }
-        nav { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; }
-        button { padding: 10px; border-radius: 5px; border: none; background: #007bff; color: white; }
-        input { display: block; margin: 10px 0; padding: 10px; width: 100%; border: 1px solid #ccc; border-radius: 5px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        nav { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
+        button { padding: 12px; border-radius: 8px; border: none; background: #007bff; color: white; font-weight: bold; cursor: pointer; }
+        input { display: block; margin: 10px 0; padding: 12px; width: 100%; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        #auth-section { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .logout-btn { background: #dc3545; font-size: 0.8em; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <h1 style="color: #007bff;">TurniBus 🚌</h1>
+    <h1 style="color: #007bff; text-align: center;">TurniBus 🚌</h1>
 
-    <nav>
-        <button onclick="showTab('turni')">Turni</button>
-        <button onclick="showTab('monteore')">Monte Ore</button>
-        <button onclick="showTab('bustepaga')">Buste Paga</button>
-    </nav>
-
-    <!-- SCHERMATA TURNI -->
-    <div id="turni" class="tab active">
-        <h3>Inserimento Turno</h3>
-        <input type="date" id="dataTurno">
-        <div id="containerRiprese">
-            <div class="ripresa" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;">
-                <input type="text" placeholder="Linea">
-                <input type="time" placeholder="Inizio">
-                <input type="time" placeholder="Fine">
-            </div>
+    <!-- SEZIONE LOGIN -->
+    <div id="auth-section">
+        <div id="login-form">
+            <h3>Accedi a TurniBus</h3>
+            <p style="font-size: 0.9em; color: #666;">Inserisci la tua email per ricevere il link di accesso magico (senza password).</p>
+            <input type="email" id="email" placeholder="La tua email">
+            <button onclick="login()" style="width: 100%;">Invia Link di Accesso</button>
+            <hr>
+            <button onclick="loginGoogle()" style="width: 100%; background: #4285F4;">Accedi con Google</button>
         </div>
-        <button onclick="aggiungiRipresa()" style="background: #28a745;">+ Aggiungi Ripresa</button>
-        <hr>
-        <button onclick="salva('Lavoro')" style="width: 100%; margin-bottom: 5px;">Salva Lavoro</button>
-        <button onclick="salva('Ferie')" style="width: 100%; background: #17a2b8;">Segna Ferie (6.5h)</button>
+        <div id="user-info" style="display: none; text-align: center;">
+            <p>Connesso come: <strong id="user-email"></strong></p>
+            <button onclick="logout()" class="logout-btn">Esci</button>
+        </div>
     </div>
 
-    <!-- SCHERMATA MONTE ORE -->
-    <div id="monteore" class="tab">
-        <h3>Resoconto Ore</h3>
-        <p>Qui vedrai i tuoi calcoli mensili...</p>
-        <button onclick="alert('Funzione PDF in arrivo!')">Scarica PDF Mese</button>
-    </div>
+    <!-- MENU APP (Visibile solo se loggati) -->
+    <div id="app-content" style="display: none;">
+        <nav>
+            <button onclick="showTab('turni')">Turni</button>
+            <button onclick="showTab('monteore')">Monte Ore</button>
+            <button onclick="showTab('bustepaga')">Buste Paga</button>
+        </nav>
 
-    <!-- SCHERMATA BUSTE PAGA -->
-    <div id="bustepaga" class="tab">
-        <h3>Buste Paga (14 Mesi)</h3>
-        <table>
-            <tr><th>Mese</th><th>Netto (€)</th><th>Lordo (€)</th></tr>
-            <script>
-                const mesi = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre','13esima','14esima'];
-                mesi.forEach(m => document.write(`<tr><td>${m}</td><td><input type="number" placeholder="0"></td><td><input type="number" placeholder="0"></td></tr>`));
-            </script>
-        </table>
+        <div id="turni" class="tab active">
+            <h3>Nuovo Turno</h3>
+            <input type="date" id="dataTurno">
+            <div id="containerRiprese">
+                <div class="ripresa" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 10px; background: white;">
+                    <input type="text" class="linea" placeholder="Linea">
+                    <div style="display:flex; gap:10px;">
+                        <input type="time" class="inizio">
+                        <input type="time" class="fine">
+                    </div>
+                </div>
+            </div>
+            <button onclick="aggiungiRipresa()" style="background: #28a745; width: 100%; margin-bottom: 15px;">+ Aggiungi Ripresa</button>
+            <button onclick="salva('Lavoro')" style="width: 100%; margin-bottom: 10px;">Salva Lavoro</button>
+            <button onclick="salva('Ferie')" style="width: 100%; background: #17a2b8;">Segna Ferie (6.5h)</button>
+        </div>
+
+        <div id="monteore" class="tab">
+            <h3>Resoconto Ore</h3>
+            <div id="lista-turni">Caricamento dati...</div>
+            <button onclick="alert('In arrivo!')" style="margin-top:20px;">Scarica PDF</button>
+        </div>
+
+        <div id="bustepaga" class="tab">
+            <h3>Buste Paga</h3>
+            <table>
+                <tr><th>Mese</th><th>Netto</th><th>Lordo</th></tr>
+                <script>
+                    const mesi = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic', '13esima', '14esima'];
+                    mesi.forEach(m => document.write(`<tr><td>${m}</td><td><input type="number" style="width:70px"></td><td><input type="number" style="width:70px"></td></tr>`));
+                </script>
+            </table>
+        </div>
     </div>
 
     <script>
-        // Collegamento Supabase
-const _supabase = supabase.createClient('https://dvcoszwhurmseubyyxel.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y');
+        const _supabase = supabase.createClient('https://dvcoszwhurmseubyyxel.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y');
 
-// Funzione per cambiare schermata
-function showTab(id) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-}
-
-// Aggiungi una ripresa dinamica
-function aggiungiRipresa() {
-    const div = document.createElement('div');
-    div.className = 'ripresa';
-    div.style = "border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius:10px; background:white;";
-    div.innerHTML = `
-        <input type="text" class="linea" placeholder="Linea (es. 42)">
-        <div style="display:flex; gap:5px;">
-            <input type="time" class="inizio">
-            <input type="time" class="fine">
-        </div>`;
-    document.getElementById('containerRiprese').appendChild(div);
-}
-
-// Calcola i minuti tra due orari
-function calcolaMinuti(inizio, fine) {
-    if (!inizio || !fine) return 0;
-    const [h1, m1] = inizio.split(':').map(Number);
-    const [h2, m2] = fine.split(':').map(Number);
-    let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
-    if (diff < 0) diff += 1440; // Gestisce il turno che passa la mezzanotte
-    return diff;
-}
-
-// FUNZIONE SALVA
-async function salva(tipo) {
-    const data = document.getElementById('dataTurno').value;
-    if (!data) return alert("Per favore, seleziona una data!");
-
-    const user = (await _supabase.auth.getUser()).data.user;
-    if (!user) return alert("Devi essere loggato per salvare! (Il login lo attiviamo tra poco)");
-
-    let oreTotali = 0;
-    const riprese = [];
-
-    if (tipo === 'Lavoro') {
-        const blocchi = document.querySelectorAll('.ripresa');
-        blocchi.forEach(b => {
-            const inizio = b.querySelector('.inizio').value;
-            const fine = b.querySelector('.fine').value;
-            const linea = b.querySelector('.linea').value;
-            if(inizio && fine) {
-                oreTotali += calcolaMinuti(inizio, fine);
-                riprese.push({ linea, inizio, fine });
+        // CONTROLLO SESSIONE (Funzione Ricordami automatica)
+        _supabase.auth.onAuthStateChanged((event, session) => {
+            if (session) {
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('user-info').style.display = 'block';
+                document.getElementById('app-content').style.display = 'block';
+                document.getElementById('user-email').innerText = session.user.email;
+            } else {
+                document.getElementById('login-form').style.display = 'block';
+                document.getElementById('user-info').style.display = 'none';
+                document.getElementById('app-content').style.display = 'none';
             }
         });
-        oreTotali = (oreTotali / 60).toFixed(2);
-    } else {
-        oreTotali = 6.5; // Ferie o Malattia come concordato
-    }
 
-    const { error } = await _supabase.from('shifts').insert([{
-        user_id: user.id,
-        date: data,
-        type: tipo,
-        total_hours: oreTotali,
-        segments: riprese
-    }]);
+        async function login() {
+            const email = document.getElementById('email').value;
+            const { error } = await _supabase.auth.signInWithOtp({ email });
+            if (error) alert(error.message);
+            else alert("Controlla la tua email! Ti abbiamo inviato il link per entrare.");
+        }
 
-    if (error) {
-        alert("Errore: " + error.message);
-    } else {
-        alert("Ottimo! Turno di " + tipo + " salvato con " + oreTotali + " ore.");
-    }
-}
+        async function loginGoogle() {
+            const { error } = await _supabase.auth.signInWithOAuth({ provider: 'google' });
+            if (error) alert(error.message);
+        }
 
-        
+        async function logout() {
+            await _supabase.auth.signOut();
+        }
+
+        function showTab(id) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function aggiungiRipresa() {
+            const div = document.createElement('div');
+            div.className = 'ripresa';
+            div.style = "border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 10px; background: white;";
+            div.innerHTML = '<input type="text" class="linea" placeholder="Linea"><div style="display:flex; gap:10px;"><input type="time" class="inizio"><input type="time" class="fine"></div>';
+            document.getElementById('containerRiprese').appendChild(div);
+        }
+
+        function calcolaMinuti(inizio, fine) {
+            if (!inizio || !fine) return 0;
+            const [h1, m1] = inizio.split(':').map(Number);
+            const [h2, m2] = fine.split(':').map(Number);
+            let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+            if (diff < 0) diff += 1440;
+            return diff;
+        }
+
+        async function salva(tipo) {
+            const data = document.getElementById('dataTurno').value;
+            if (!data) return alert("Seleziona una data!");
+            
+            const user = (await _supabase.auth.getUser()).data.user;
+            let oreTotali = 0;
+            const riprese = [];
+
+            if (tipo === 'Lavoro') {
+                document.querySelectorAll('.ripresa').forEach(b => {
+                    const i = b.querySelector('.inizio').value;
+                    const f = b.querySelector('.fine').value;
+                    if(i && f) {
+                        oreTotali += calcolaMinuti(i, f);
+                        riprese.push({ linea: b.querySelector('.linea').value, inizio: i, fine: f });
+                    }
+                });
+                oreTotali = (oreTotali / 60).toFixed(2);
+            } else {
+                oreTotali = 6.5;
+            }
+
+            const { error } = await _supabase.from('shifts').insert([{
+                user_id: user.id,
+                date: data,
+                type: tipo,
+                total_hours: oreTotali,
+                segments: riprese
+            }]);
+
+            if (error) alert("Errore: " + error.message);
+            else alert("Salvato: " + tipo + " (" + oreTotali + " ore)");
+        }
     </script>
 </body>
 </html>
