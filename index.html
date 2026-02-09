@@ -32,7 +32,7 @@
             <h3>Accedi a TurniBus</h3>
             <p style="font-size: 0.9em; color: #666;">Inserisci la tua email per il link magico.</p>
             <input type="email" id="email" placeholder="La tua email">
-            <button onclick="login()" style="width: 100%;">Invia Link di Accesso</button>
+            <button onclick="loginEmail()">Invia Link di Accesso</button>
             <hr>
             <button onclick="loginGoogle()" style="width: 100%; background: #4285F4;">Accedi con Google</button>
         </div>
@@ -89,29 +89,42 @@
     </div>
 
     <script>
-        // Configurazione Supabase
-        const SUPABASE_URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const _supabase = supabase.createClient(
+            'https://dvcoszwhurmseubyyxel.supabase.co', 
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y'
+        );
 
-        // Gestione Sessione
+        // Controllo Sessione
         _supabase.auth.onAuthStateChanged((event, session) => {
-            const isLogged = !!session;
-            document.getElementById('login-form').style.display = isLogged ? 'none' : 'block';
-            document.getElementById('user-info').style.display = isLogged ? 'block' : 'none';
-            document.getElementById('app-content').style.display = isLogged ? 'block' : 'none';
-            if (isLogged) document.getElementById('user-email').innerText = session.user.email;
+            if (session) {
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('user-info').style.display = 'block';
+                document.getElementById('app-content').style.display = 'block';
+                document.getElementById('user-email').innerText = session.user.email;
+            } else {
+                document.getElementById('login-form').style.display = 'block';
+                document.getElementById('user-info').style.display = 'none';
+                document.getElementById('app-content').style.display = 'none';
+            }
         });
 
-        async function login() {
+        async function loginEmail() {
             const email = document.getElementById('email').value;
-            const { error } = await _supabase.auth.signInWithOtp({ email });
-            alert(error ? error.message : "Controlla la tua email!");
+            if(!email) return alert("Inserisci l'email!");
+            const { error } = await _supabase.auth.signInWithOtp({ 
+                email,
+                options: { emailRedirectTo: window.location.href }
+            });
+            if (error) alert("Errore: " + error.message);
+            else alert("Controlla la tua email per il link di accesso!");
         }
 
         async function loginGoogle() {
-            const { error } = await _supabase.auth.signInWithOAuth({ provider: 'google' });
-            if (error) alert(error.message);
+            const { error } = await _supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.href }
+            });
+            if (error) alert("Errore Google: " + error.message);
         }
 
         async function logout() { await _supabase.auth.signOut(); }
@@ -153,6 +166,7 @@
                         riprese.push({ linea: r.querySelector('.linea').value, inizio: i, fine: f });
                     }
                 });
+                if(riprese.length === 0) return alert("Inserisci almeno una ripresa!");
             } else {
                 minutiTotali = 390; // 6.5 ore
             }
@@ -165,18 +179,23 @@
                 details: riprese
             }]);
 
-            if (error) alert("Errore: " + error.message);
+            if (error) alert("Errore salvataggio: " + error.message);
             else {
-                alert("Salvato!");
-                location.reload(); // Ricarica per pulire i campi
+                alert("Turno salvato con successo!");
+                showTab('monteore');
             }
         }
 
         async function caricaTurni() {
             const { data: { user } } = await _supabase.auth.getUser();
-            const { data, error } = await _supabase.from('shifts').select('*').eq('user_id', user.id).order('date', { ascending: false });
+            const { data, error } = await _supabase
+                .from('shifts')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('date', { ascending: false });
 
-            if (error) return;
+            if (error) return console.error(error);
+            
             let html = '<table><tr><th>Data</th><th>Tipo</th><th>Ore</th></tr>';
             data.forEach(t => {
                 html += `<tr><td>${t.date}</td><td>${t.type}</td><td>${t.total_hours}h</td></tr>`;
