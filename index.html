@@ -64,25 +64,81 @@
 
     <script>
         // Collegamento Supabase
-        const _supabase = supabase.createClient('https://dvcoszwhurmseubyyxel.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y');
+const _supabase = supabase.createClient('https://dvcoszwhurmseubyyxel.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y');
 
-        function showTab(id) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
+// Funzione per cambiare schermata
+function showTab(id) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
 
-        function aggiungiRipresa() {
-            const div = document.createElement('div');
-            div.className = 'ripresa';
-            div.style = "border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;";
-            div.innerHTML = '<input type="text" placeholder="Linea"><input type="time"><input type="time">';
-            document.getElementById('containerRiprese').appendChild(div);
-        }
+// Aggiungi una ripresa dinamica
+function aggiungiRipresa() {
+    const div = document.createElement('div');
+    div.className = 'ripresa';
+    div.style = "border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius:10px; background:white;";
+    div.innerHTML = `
+        <input type="text" class="linea" placeholder="Linea (es. 42)">
+        <div style="display:flex; gap:5px;">
+            <input type="time" class="inizio">
+            <input type="time" class="fine">
+        </div>`;
+    document.getElementById('containerRiprese').appendChild(div);
+}
 
-        async function salva(tipo) {
-            alert("Salvato: " + tipo);
-            // Qui inseriremo la logica di invio a Supabase
-        }
+// Calcola i minuti tra due orari
+function calcolaMinuti(inizio, fine) {
+    if (!inizio || !fine) return 0;
+    const [h1, m1] = inizio.split(':').map(Number);
+    const [h2, m2] = fine.split(':').map(Number);
+    let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+    if (diff < 0) diff += 1440; // Gestisce il turno che passa la mezzanotte
+    return diff;
+}
+
+// FUNZIONE SALVA
+async function salva(tipo) {
+    const data = document.getElementById('dataTurno').value;
+    if (!data) return alert("Per favore, seleziona una data!");
+
+    const user = (await _supabase.auth.getUser()).data.user;
+    if (!user) return alert("Devi essere loggato per salvare! (Il login lo attiviamo tra poco)");
+
+    let oreTotali = 0;
+    const riprese = [];
+
+    if (tipo === 'Lavoro') {
+        const blocchi = document.querySelectorAll('.ripresa');
+        blocchi.forEach(b => {
+            const inizio = b.querySelector('.inizio').value;
+            const fine = b.querySelector('.fine').value;
+            const linea = b.querySelector('.linea').value;
+            if(inizio && fine) {
+                oreTotali += calcolaMinuti(inizio, fine);
+                riprese.push({ linea, inizio, fine });
+            }
+        });
+        oreTotali = (oreTotali / 60).toFixed(2);
+    } else {
+        oreTotali = 6.5; // Ferie o Malattia come concordato
+    }
+
+    const { error } = await _supabase.from('shifts').insert([{
+        user_id: user.id,
+        date: data,
+        type: tipo,
+        total_hours: oreTotali,
+        segments: riprese
+    }]);
+
+    if (error) {
+        alert("Errore: " + error.message);
+    } else {
+        alert("Ottimo! Turno di " + tipo + " salvato con " + oreTotali + " ore.");
+    }
+}
+
+        
     </script>
 </body>
 </html>
