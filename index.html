@@ -4,17 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurniBus 🚌</title>
-    <!-- Caricamento alternativo più stabile per mobile -->
-    <script src="https://unpkg.com"></script>
+    <script src="https://cdn.jsdelivr.net"></script>
     <style>
         body { font-family: sans-serif; padding: 20px; background: #f4f4f9; max-width: 500px; margin: auto; }
         .tab { display: none; }
         .active { display: block; }
-        nav { display: flex; gap: 10px; margin-bottom: 20px; }
-        button { padding: 12px; border-radius: 8px; border: none; background: #007bff; color: white; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; }
+        button { padding: 15px; border-radius: 8px; border: none; background: #007bff; color: white; font-weight: bold; width: 100%; margin-bottom: 10px; -webkit-appearance: none; }
         input { display: block; margin: 10px 0; padding: 12px; width: 100%; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
         #auth-section { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .ripresa { border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 10px; background: white; }
     </style>
 </head>
 <body>
@@ -23,87 +20,66 @@
 
     <div id="auth-section">
         <div id="login-form">
-            <h3>Accesso</h3>
-            <input type="email" id="email" placeholder="Tua email">
-            <button onclick="loginEmail()">Invia Link Email</button>
-            <button onclick="loginGoogle()" style="background: #4285F4;">Accedi con Google</button>
+            <input type="email" id="email" placeholder="Inserisci la tua email">
+            <button type="button" onclick="handleEmailLogin()">Manda Link di Accesso</button>
+            <button type="button" onclick="handleGoogleLogin()" style="background: #4285F4;">Accedi con Google</button>
         </div>
         <div id="user-info" style="display: none; text-align: center;">
             <p id="user-email"></p>
-            <button onclick="logout()" style="background: #dc3545;">Esci</button>
-        </div>
-    </div>
-
-    <div id="app-content" style="display: none; margin-top: 20px;">
-        <nav>
-            <button onclick="showTab('turni')">➕ Turni</button>
-            <button onclick="showTab('monteore')">📊 Ore</button>
-        </nav>
-        <div id="turni" class="tab active">
-            <input type="date" id="dataTurno">
-            <div id="containerRiprese">
-                <div class="ripresa">
-                    <input type="text" class="linea" placeholder="Linea">
-                    <input type="time" class="inizio">
-                    <input type="time" class="fine">
-                </div>
-            </div>
-            <button onclick="salva('Lavoro')">Salva Turno</button>
-        </div>
-        <div id="monteore" class="tab">
-            <div id="lista-turni">Caricamento...</div>
+            <button onclick="handleLogout()" style="background: #dc3545;">Esci</button>
         </div>
     </div>
 
     <script>
-        // Test immediato: se non vedi questo, il file non è aggiornato su GitHub
-        alert("App Avviata! Se leggi questo, il codice è caricato.");
-
         const SUPABASE_URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
         
-        let _supabase;
-        try {
-            _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        } catch (e) {
-            alert("Errore caricamento libreria Supabase: " + e.message);
-        }
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // Controllo immediato della sessione
         _supabase.auth.onAuthStateChanged((event, session) => {
             if (session) {
                 document.getElementById('login-form').style.display = 'none';
                 document.getElementById('user-info').style.display = 'block';
-                document.getElementById('app-content').style.display = 'block';
-                document.getElementById('user-email').innerText = session.user.email;
-            } else {
-                document.getElementById('login-form').style.display = 'block';
-                document.getElementById('user-info').style.display = 'none';
-                document.getElementById('app-content').style.display = 'none';
+                document.getElementById('user-email').innerText = "Loggato come: " + session.user.email;
             }
         });
 
-        async function loginEmail() {
-            const email = document.getElementById('email').value;
-            const { error } = await _supabase.auth.signInWithOtp({ 
-                email, 
-                options: { emailRedirectTo: window.location.href } 
-            });
-            alert(error ? error.message : "Controlla la mail!");
+        async function handleEmailLogin() {
+            try {
+                const emailAddr = document.getElementById('email').value;
+                if (!emailAddr) return alert("Inserisci un'email valida!");
+                
+                const { error } = await _supabase.auth.signInWithOtp({
+                    email: emailAddr,
+                    options: { emailRedirectTo: window.location.origin + window.location.pathname }
+                });
+
+                if (error) throw error;
+                alert("Email inviata! Controlla la tua posta.");
+            } catch (err) {
+                alert("Errore Email: " + err.message);
+            }
         }
 
-        async function loginGoogle() {
-            const { error } = await _supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo: window.location.href }
-            });
-            if (error) alert(error.message);
+        async function handleGoogleLogin() {
+            try {
+                const { error } = await _supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: { 
+                        redirectTo: window.location.origin + window.location.pathname,
+                        skipBrowserRedirect: false 
+                    }
+                });
+                if (error) throw error;
+            } catch (err) {
+                alert("Errore Google: " + err.message);
+            }
         }
 
-        async function logout() { await _supabase.auth.signOut(); }
-
-        function showTab(id) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
+        async function handleLogout() {
+            await _supabase.auth.signOut();
+            window.location.reload();
         }
     </script>
 </body>
