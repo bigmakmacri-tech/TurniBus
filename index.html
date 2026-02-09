@@ -4,141 +4,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurniBus 🚌</title>
-    <!-- Caricamento libreria con integrità -->
     <script src="https://cdn.jsdelivr.net"></script>
     <style>
         body { font-family: sans-serif; padding: 20px; background: #f4f4f9; max-width: 500px; margin: auto; }
-        .tab { display: none; }
-        .active { display: block; }
-        nav { display: flex; gap: 10px; margin-bottom: 20px; }
-        button { padding: 12px; border-radius: 8px; border: none; background: #007bff; color: white; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; }
+        #auth-section { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
+        button { padding: 15px; border-radius: 8px; border: none; background: #007bff; color: white; font-weight: bold; width: 100%; margin-bottom: 10px; cursor: pointer; }
         input { display: block; margin: 10px 0; padding: 12px; width: 100%; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
-        #auth-section, .ripresa { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        table { width: 100%; border-collapse: collapse; background: white; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
     </style>
 </head>
 <body>
 
     <h1 style="text-align: center; color: #007bff;">TurniBus 🚌</h1>
 
-    <!-- SEZIONE LOGIN -->
     <div id="auth-section">
         <div id="login-form">
-            <input type="email" id="email" placeholder="Inserisci la tua email">
-            <button onclick="loginEmail()">Manda Link Email</button>
-            <button onclick="loginGoogle()" style="background: #4285F4;">Accedi con Google</button>
+            <p>Se i tasti non rispondono, ricarica la pagina in <b>Incognito</b>.</p>
+            <input type="email" id="email" placeholder="Email per login">
+            <button type="button" onclick="loginWithEmail()">Invia Link Email</button>
+            <button type="button" onclick="loginWithGoogle()" style="background: #4285F4;">Accedi con Google</button>
         </div>
-        <div id="user-info" style="display: none; text-align: center;">
-            <p id="user-email-display"></p>
-            <button onclick="logout()" style="background: #dc3545; width: auto; padding: 5px 15px;">Esci</button>
-        </div>
-    </div>
-
-    <!-- CONTENUTO APP -->
-    <div id="app-content" style="display: none;">
-        <nav>
-            <button onclick="showTab('turni')">➕ Turni</button>
-            <button onclick="showTab('monteore')">📊 Ore</button>
-        </nav>
-
-        <div id="turni" class="tab active">
-            <input type="date" id="dataTurno">
-            <div id="containerRiprese">
-                <div class="ripresa">
-                    <input type="text" class="linea" placeholder="Linea">
-                    <input type="time" class="inizio">
-                    <input type="time" class="fine">
-                </div>
-            </div>
-            <button onclick="salvaTurno()" style="background: #28a745;">Salva Lavoro</button>
-        </div>
-
-        <div id="monteore" class="tab">
-            <div id="lista-turni">Caricamento...</div>
+        <div id="user-logged" style="display: none;">
+            <p id="welcome-msg"></p>
+            <button onclick="doLogout()" style="background: #dc3545;">Esci</button>
         </div>
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
+        // Configurazione
+        const S_URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
         
-        let _supabase;
+        let client;
 
-        // Inizializzazione sicura
-        window.onload = () => {
-            _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            
-            _supabase.auth.onAuthStateChanged((event, session) => {
-                if (session) {
-                    document.getElementById('login-form').style.display = 'none';
-                    document.getElementById('user-info').style.display = 'block';
-                    document.getElementById('app-content').style.display = 'block';
-                    document.getElementById('user-email-display').innerText = session.user.email;
-                } else {
-                    document.getElementById('login-form').style.display = 'block';
-                    document.getElementById('user-info').style.display = 'none';
-                    document.getElementById('app-content').style.display = 'none';
+        function getClient() {
+            if (!client) {
+                if (typeof supabase === 'undefined') {
+                    alert("ERRORE: La libreria Supabase è stata bloccata dal browser o dalla rete. Prova a cambiare connessione o browser.");
+                    return null;
                 }
-            });
-        };
+                client = supabase.createClient(S_URL, S_KEY);
+            }
+            return client;
+        }
 
-        async function loginEmail() {
+        async function loginWithEmail() {
+            const sb = getClient();
+            if (!sb) return;
             const email = document.getElementById('email').value;
-            const { error } = await _supabase.auth.signInWithOtp({ 
-                email, 
-                options: { emailRedirectTo: window.location.href } 
-            });
-            alert(error ? error.message : "Controlla la mail!");
+            if (!email) return alert("Inserisci l'email!");
+            const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
+            alert(error ? error.message : "Controlla la tua posta!");
         }
 
-        async function loginGoogle() {
-            const { error } = await _supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo: window.location.href }
-            });
+        async function loginWithGoogle() {
+            const sb = getClient();
+            if (!sb) return;
+            const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } });
             if (error) alert(error.message);
         }
 
-        async function logout() { await _supabase.auth.signOut(); window.location.reload(); }
-
-        function showTab(id) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            if (id === 'monteore') caricaTurni();
+        async function doLogout() {
+            const sb = getClient();
+            await sb.auth.signOut();
+            window.location.reload();
         }
 
-        async function salvaTurno() {
-            const data = document.getElementById('dataTurno').value;
-            if(!data) return alert("Metti la data!");
-            
-            const { data: { user } } = await _supabase.auth.getUser();
-            const ripresa = document.querySelector('.ripresa');
-            const h1 = ripresa.querySelector('.inizio').value;
-            const h2 = ripresa.querySelector('.fine').value;
-            
-            // Calcolo rapido ore
-            const diff = (new Date(`1970-01-01T${h2}`) - new Date(`1970-01-01T${h1}`)) / 3600000;
-
-            const { error } = await _supabase.from('shifts').insert([{
-                user_id: user.id,
-                date: data,
-                type: 'Lavoro',
-                total_hours: diff.toFixed(2)
-            }]);
-
-            if (error) alert(error.message);
-            else { alert("Salvato!"); showTab('monteore'); }
-        }
-
-        async function caricaTurni() {
-            const { data: { user } } = await _supabase.auth.getUser();
-            const { data, error } = await _supabase.from('shifts').select('*').eq('user_id', user.id);
-            if (error) return;
-            let h = '<table>';
-            data.forEach(t => h += `<tr><td>${t.date}</td><td>${t.total_hours}h</td></tr>`);
-            document.getElementById('lista-turni').innerHTML = h + '</table>';
-        }
+        // Controllo automatico all'avvio
+        window.addEventListener('DOMContentLoaded', () => {
+            const sb = getClient();
+            if (sb) {
+                sb.auth.onAuthStateChanged((event, session) => {
+                    if (session) {
+                        document.getElementById('login-form').style.display = 'none';
+                        document.getElementById('user-logged').style.display = 'block';
+                        document.getElementById('welcome-msg').innerText = "Ciao, " + session.user.email;
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>
