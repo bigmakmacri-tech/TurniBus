@@ -4,97 +4,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurniBus 🚌</title>
-    <!-- Libreria Supabase corretta -->
-    <script src="https://cdn.jsdelivr.net"></script>
+    <!-- Caricamento alternativo più stabile per mobile -->
+    <script src="https://unpkg.com"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #f4f4f9; max-width: 500px; margin: auto; }
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f9; max-width: 500px; margin: auto; }
         .tab { display: none; }
         .active { display: block; }
-        nav { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
-        button { padding: 12px; border-radius: 8px; border: none; background: #007bff; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { opacity: 0.8; }
+        nav { display: flex; gap: 10px; margin-bottom: 20px; }
+        button { padding: 12px; border-radius: 8px; border: none; background: #007bff; color: white; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px; }
         input { display: block; margin: 10px 0; padding: 12px; width: 100%; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 0.9em; }
-        th { background: #007bff; color: white; }
-        #auth-section { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .logout-btn { background: #dc3545; font-size: 0.8em; margin-top: 10px; }
+        #auth-section { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .ripresa { border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 10px; background: white; }
     </style>
 </head>
 <body>
 
-    <h1 style="color: #007bff; text-align: center;">TurniBus 🚌</h1>
+    <h1 style="text-align: center; color: #007bff;">TurniBus 🚌</h1>
 
-    <!-- SEZIONE LOGIN -->
     <div id="auth-section">
         <div id="login-form">
-            <h3>Accedi a TurniBus</h3>
-            <p style="font-size: 0.9em; color: #666;">Inserisci la tua email per il link magico.</p>
-            <input type="email" id="email" placeholder="La tua email">
-            <button onclick="loginEmail()">Invia Link di Accesso</button>
-            <hr>
-            <button onclick="loginGoogle()" style="width: 100%; background: #4285F4;">Accedi con Google</button>
+            <h3>Accesso</h3>
+            <input type="email" id="email" placeholder="Tua email">
+            <button onclick="loginEmail()">Invia Link Email</button>
+            <button onclick="loginGoogle()" style="background: #4285F4;">Accedi con Google</button>
         </div>
         <div id="user-info" style="display: none; text-align: center;">
-            <p>Ciao, <strong id="user-email"></strong></p>
-            <button onclick="logout()" class="logout-btn">Esci</button>
+            <p id="user-email"></p>
+            <button onclick="logout()" style="background: #dc3545;">Esci</button>
         </div>
     </div>
 
-    <!-- MENU APP -->
-    <div id="app-content" style="display: none;">
+    <div id="app-content" style="display: none; margin-top: 20px;">
         <nav>
             <button onclick="showTab('turni')">➕ Turni</button>
-            <button onclick="showTab('monteore')">📊 Monte Ore</button>
-            <button onclick="showTab('bustepaga')">💰 Buste Paga</button>
+            <button onclick="showTab('monteore')">📊 Ore</button>
         </nav>
-
-        <!-- TAB INSERIMENTO -->
         <div id="turni" class="tab active">
-            <h3>Nuovo Turno</h3>
-            <label>Data:</label>
             <input type="date" id="dataTurno">
             <div id="containerRiprese">
                 <div class="ripresa">
-                    <input type="text" class="linea" placeholder="Linea (es. 121, Fuori Servizio)">
-                    <div style="display:flex; gap:10px;">
-                        <input type="time" class="inizio">
-                        <input type="time" class="fine">
-                    </div>
+                    <input type="text" class="linea" placeholder="Linea">
+                    <input type="time" class="inizio">
+                    <input type="time" class="fine">
                 </div>
             </div>
-            <button onclick="aggiungiRipresa()" style="background: #28a745; width: 100%; margin-bottom: 15px;">+ Aggiungi Ripresa</button>
-            <button onclick="salva('Lavoro')" style="width: 100%; margin-bottom: 10px;">Salva Lavoro</button>
-            <button onclick="salva('Ferie')" style="width: 100%; background: #17a2b8;">Segna Ferie (6.5h)</button>
+            <button onclick="salva('Lavoro')">Salva Turno</button>
         </div>
-
-        <!-- TAB VISUALIZZAZIONE -->
         <div id="monteore" class="tab">
-            <h3>Resoconto Ore</h3>
-            <div id="lista-turni">Caricamento in corso...</div>
-        </div>
-
-        <!-- TAB BUSTE PAGA -->
-        <div id="bustepaga" class="tab">
-            <h3>Buste Paga</h3>
-            <table>
-                <tr><th>Mese</th><th>Netto (€)</th></tr>
-                <script>
-                    const mesi = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
-                    mesi.forEach(m => document.write(`<tr><td>${m}</td><td><input type="number" step="0.01" style="margin:0; padding:5px;"></td></tr>`));
-                </script>
-            </table>
+            <div id="lista-turni">Caricamento...</div>
         </div>
     </div>
 
     <script>
-        const _supabase = supabase.createClient(
-            'https://dvcoszwhurmseubyyxel.supabase.co', 
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y'
-        );
+        // Test immediato: se non vedi questo, il file non è aggiornato su GitHub
+        alert("App Avviata! Se leggi questo, il codice è caricato.");
 
-        // Controllo Sessione
+        const SUPABASE_URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
+        
+        let _supabase;
+        try {
+            _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch (e) {
+            alert("Errore caricamento libreria Supabase: " + e.message);
+        }
+
         _supabase.auth.onAuthStateChanged((event, session) => {
             if (session) {
                 document.getElementById('login-form').style.display = 'none';
@@ -110,13 +84,11 @@
 
         async function loginEmail() {
             const email = document.getElementById('email').value;
-            if(!email) return alert("Inserisci l'email!");
             const { error } = await _supabase.auth.signInWithOtp({ 
-                email,
-                options: { emailRedirectTo: window.location.href }
+                email, 
+                options: { emailRedirectTo: window.location.href } 
             });
-            if (error) alert("Errore: " + error.message);
-            else alert("Controlla la tua email per il link di accesso!");
+            alert(error ? error.message : "Controlla la mail!");
         }
 
         async function loginGoogle() {
@@ -124,7 +96,7 @@
                 provider: 'google',
                 options: { redirectTo: window.location.href }
             });
-            if (error) alert("Errore Google: " + error.message);
+            if (error) alert(error.message);
         }
 
         async function logout() { await _supabase.auth.signOut(); }
@@ -132,75 +104,6 @@
         function showTab(id) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            if (id === 'monteore') caricaTurni();
-        }
-
-        function aggiungiRipresa() {
-            const div = document.createElement('div');
-            div.className = 'ripresa';
-            div.innerHTML = `<input type="text" class="linea" placeholder="Linea"><div style="display:flex; gap:10px;"><input type="time" class="inizio"><input type="time" class="fine"></div>`;
-            document.getElementById('containerRiprese').appendChild(div);
-        }
-
-        function calcolaMinuti(inizio, fine) {
-            const [h1, m1] = inizio.split(':').map(Number);
-            const [h2, m2] = fine.split(':').map(Number);
-            let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
-            return diff < 0 ? diff + 1440 : diff;
-        }
-
-        async function salva(tipo) {
-            const dataVal = document.getElementById('dataTurno').value;
-            if (!dataVal) return alert("Scegli una data!");
-
-            const { data: { user } } = await _supabase.auth.getUser();
-            let minutiTotali = 0;
-            let riprese = [];
-
-            if (tipo === 'Lavoro') {
-                document.querySelectorAll('.ripresa').forEach(r => {
-                    const i = r.querySelector('.inizio').value;
-                    const f = r.querySelector('.fine').value;
-                    if (i && f) {
-                        minutiTotali += calcolaMinuti(i, f);
-                        riprese.push({ linea: r.querySelector('.linea').value, inizio: i, fine: f });
-                    }
-                });
-                if(riprese.length === 0) return alert("Inserisci almeno una ripresa!");
-            } else {
-                minutiTotali = 390; // 6.5 ore
-            }
-
-            const { error } = await _supabase.from('shifts').insert([{
-                user_id: user.id,
-                date: dataVal,
-                type: tipo,
-                total_hours: (minutiTotali / 60).toFixed(2),
-                details: riprese
-            }]);
-
-            if (error) alert("Errore salvataggio: " + error.message);
-            else {
-                alert("Turno salvato con successo!");
-                showTab('monteore');
-            }
-        }
-
-        async function caricaTurni() {
-            const { data: { user } } = await _supabase.auth.getUser();
-            const { data, error } = await _supabase
-                .from('shifts')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('date', { ascending: false });
-
-            if (error) return console.error(error);
-            
-            let html = '<table><tr><th>Data</th><th>Tipo</th><th>Ore</th></tr>';
-            data.forEach(t => {
-                html += `<tr><td>${t.date}</td><td>${t.type}</td><td>${t.total_hours}h</td></tr>`;
-            });
-            document.getElementById('lista-turni').innerHTML = html + '</table>';
         }
     </script>
 </body>
