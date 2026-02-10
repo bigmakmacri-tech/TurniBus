@@ -1,31 +1,65 @@
 <!DOCTYPE html>
-<html lang="it">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>TurniBus</title>
+    <title>TurniBus 🚌</title>
 </head>
 <body style="font-family:sans-serif; text-align:center; padding:50px;">
     <h1>TurniBus 🚌</h1>
-    <input type="email" id="email" placeholder="latua@email.it" style="padding:10px;">
-    <button id="btn">ACCEDI ORA</button>
+    <p>Accesso d'emergenza (No-Library Mode)</p>
+    
+    <div style="background:#f9f9f9; padding:20px; border-radius:10px; display:inline-block; border:1px solid #ccc;">
+        <input type="email" id="email" placeholder="latua@email.it" style="padding:10px; width:200px;">
+        <button onclick="login()" id="btn" style="padding:10px; cursor:pointer;">ACCEDI</button>
+    </div>
+    <p id="status"></p>
 
-    <script type="module">
-        // Importiamo Supabase come modulo diretto (bypass firewall)
-        import { createClient } from 'https://cdn.skypack.dev';
-
-        const URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
-        const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
-        const sb = createClient(URL, KEY);
-
-        document.getElementById('btn').onclick = async () => {
+    <script>
+        async function login() {
             const email = document.getElementById('email').value;
-            const { error } = await sb.auth.signInWithOtp({ 
-                email,
-                options: { emailRedirectTo: window.location.origin }
-            });
-            if (error) alert("Errore: " + error.message);
-            else alert("✅ Mail inviata! Controlla ora.");
-        };
+            const btn = document.getElementById('btn');
+            const status = document.getElementById('status');
+            
+            if(!email) return alert("Inserisci la mail");
+
+            btn.disabled = true;
+            status.innerText = "Tentativo di invio...";
+
+            // DATI DEL TUO PROGETTO
+            const URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
+            const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
+
+            try {
+                // Parliamo direttamente con Supabase senza librerie intermedie
+                const response = await fetch(URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': KEY,
+                        'Authorization': 'Bearer ' + KEY
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        create_user: true
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert("✅ GRANDE! La richiesta è passata. Controlla la mail!");
+                    status.innerText = "Mail inviata correttamente.";
+                } else {
+                    alert("Errore Supabase: " + (data.msg || data.error_description));
+                    status.innerText = "Errore: " + data.msg;
+                }
+            } catch (err) {
+                alert("❌ BLOCCO DI RETE: Il tuo browser impedisce la connessione a Supabase.");
+                status.innerText = "La tua rete blocca Supabase. Prova dal telefono (senza Wi-Fi).";
+            } finally {
+                btn.disabled = false;
+            }
+        }
     </script>
 </body>
 </html>
