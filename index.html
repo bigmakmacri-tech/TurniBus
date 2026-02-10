@@ -3,83 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TurniBus Test</title>
-    <!-- Carichiamo Supabase in modo più sicuro -->
-<script src="https://unpkg.com"></script>
-    
+    <title>TurniBus</title>
+    <!-- Caricamento moderno via Modulo -->
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net'
+        
+        const URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
+        const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
+        
+        // Creiamo il client e lo rendiamo usabile in tutta la pagina
+        const sb = createClient(URL, KEY);
+        window.sb = sb; 
+
+        // Notifichiamo che il sistema è pronto
+        document.getElementById('status').innerHTML = "✅ Sistema pronto!";
+        document.getElementById('status').style.color = "blue";
+
+        // Controlliamo se l'utente è già loggato
+        const checkUser = async () => {
+            const { data } = await sb.auth.getSession();
+            if (data.session) {
+                mostraDashboard(data.session.user.email);
+            }
+        };
+        checkUser();
+
+        // Rendiamo la funzione login disponibile al bottone
+        window.login = async () => {
+            const email = document.getElementById('email').value;
+            const btn = document.getElementById('btn-login');
+            btn.innerText = "Inviando...";
+            
+            const { error } = await sb.auth.signInWithOtp({ 
+                email,
+                options: { emailRedirectTo: window.location.origin }
+            });
+
+            if (error) alert("Errore: " + error.message);
+            else alert("Mail inviata! Controlla la posta.");
+            btn.innerText = "PROVA LOGIN";
+        };
+
+        function mostraDashboard(email) {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            document.getElementById('user-email').innerText = email;
+        }
+    </script>
 </head>
 <body>
     <h1>TurniBus 🚌</h1>
     
-    <div id="status">Verifica connessione...</div>
+    <div id="status">Verifica caricamento...</div>
 
     <div id="login-form" style="margin-top: 20px;">
         <input type="email" id="email" placeholder="latua@email.it" style="padding:10px; width:200px;">
         <button id="btn-login" onclick="login()">PROVA LOGIN</button>
     </div>
 
-    <div id="dashboard" style="display:none; color: green; font-weight: bold;">
+    <div id="dashboard" style="display:none; color: green; font-weight: bold; margin-top: 20px;">
         <p>SEI DENTRO!</p>
+        <p>Email: <span id="user-email"></span></p>
         <button onclick="sb.auth.signOut().then(() => location.reload())">ESCI</button>
     </div>
-
-    <script>
-        // 1. Controllo immediato se la libreria esiste
-        const statusDiv = document.getElementById('status');
-        
-        if (typeof supabase === 'undefined') {
-            statusDiv.innerHTML = "❌ ERRORE: Libreria Supabase non caricata!";
-            statusDiv.style.color = "red";
-        } else {
-            statusDiv.innerHTML = "✅ Sistema pronto. Inserisci la mail.";
-            statusDiv.style.color = "blue";
-        }
-
-        const URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
-        const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
-        
-        // Inizializzazione
-        const sb = supabase.createClient(URL, KEY);
-
-        async function login() {
-            const emailInput = document.getElementById('email').value;
-            const btn = document.getElementById('btn-login');
-            
-            if(!emailInput) {
-                alert("Metti la mail!");
-                return;
-            }
-
-            btn.innerText = "Invio in corso...";
-            btn.disabled = true;
-
-            try {
-                const { error } = await sb.auth.signInWithOtp({ 
-                    email: emailInput,
-                    options: { emailRedirectTo: window.location.origin }
-                });
-
-                if (error) {
-                    alert("Errore Supabase: " + error.message);
-                } else {
-                    alert("MAIL INVIATA! Controlla la posta (anche spam).");
-                }
-            } catch (err) {
-                alert("Errore fatale: " + err.message);
-            } finally {
-                btn.innerText = "PROVA LOGIN";
-                btn.disabled = false;
-            }
-        }
-
-        // Controllo sessione
-        sb.auth.onAuthStateChange((event, session) => {
-            if (session) {
-                document.getElementById('login-form').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'block';
-                statusDiv.innerHTML = "Logged come: " + session.user.email;
-            }
-        });
-    </script>
 </body>
 </html>
