@@ -30,14 +30,24 @@
         const sb = supabase.createClient(URL, KEY);
 
         async function login() {
-            const email = document.getElementById('email').value;
-            const { error } = await sb.auth.signInWithOtp({ 
-                email,
-                options: { emailRedirectTo: window.location.href } 
-            });
-            if (error) alert("Errore: " + error.message);
-            else alert("Controlla la mail! Clicca sul link che ti è arrivato.");
+    const email = document.getElementById('email').value;
+    console.log("Tentativo login per:", email); // Debug
+    
+    const { data, error } = await sb.auth.signInWithOtp({ 
+        email: email,
+        options: { 
+            emailRedirectTo: window.location.origin 
+        } 
+    });
+
+    if (error) {
+        alert("Errore Supabase: " + error.message);
+        console.error(error);
+    } else {
+        alert("Mail inviata con successo a: " + email);
+    }
         }
+        
 
         async function logout() {
             await sb.auth.signOut();
