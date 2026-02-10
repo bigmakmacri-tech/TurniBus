@@ -1,70 +1,45 @@
 <!DOCTYPE html>
-<html lang="it">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurniBus 🚌</title>
-    <!-- CARICAMENTO FORZATO: Inseriamo la libreria direttamente nel file -->
-    <script src="https://cdn.jsdelivr.net"></script>
 </head>
-<body style="font-family: sans-serif; text-align: center; padding: 50px; background: #f4f7f6;">
-    <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: inline-block;">
-        <h1>TurniBus 🚌</h1>
-        <p id="status" style="color: orange;">Inizializzazione in corso...</p>
-        
-        <div id="login-section" style="display:none; margin-top: 20px;">
-            <input type="email" id="email" placeholder="latua@email.it" style="padding: 12px; width: 250px; border: 1px solid #ccc; border-radius: 5px;">
-            <br><br>
-            <button id="btn-login" onclick="login()" style="padding: 12px 25px; background: #3ecf8e; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
-                RICEVI LINK MAGICO
-            </button>
-        </div>
-    </div>
+<body style="font-family:sans-serif; text-align:center; padding:50px;">
+    <h1>TurniBus 🚌</h1>
+    <p>Inserisci la mail per accedere:</p>
+    
+    <input type="email" id="email" placeholder="latua@email.it" style="padding:10px; width:250px;">
+    <button onclick="inviaMail()" id="btn" style="padding:10px; background:#3ecf8e; color:white; border:none; border-radius:5px; cursor:pointer;">
+        ACCEDI ORA
+    </button>
 
     <script>
-        // Funzione di controllo critico
-        function checkAndStart() {
-            const statusEl = document.getElementById('status');
-            const loginSection = document.getElementById('login-section');
-
-            if (typeof supabase !== 'undefined') {
-                statusEl.innerHTML = "✅ Sistema Pronto!";
-                statusEl.style.color = "green";
-                loginSection.style.display = 'block';
-
-                const URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
-                const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
-                
-                window.sb = supabase.createClient(URL, KEY);
-            } else {
-                statusEl.innerHTML = "❌ Errore critico: Browser blocca Supabase.<br>Prova a cambiare browser (es. Chrome o Edge) o usa una scheda in incognito.";
-                statusEl.style.color = "red";
-            }
-        }
-
-        // Avvio ritardato per sicurezza
-        setTimeout(checkAndStart, 1500);
-
-        async function login() {
+        async function inviaMail() {
             const email = document.getElementById('email').value;
-            if (!email) { alert("Inserisci la mail!"); return; }
-
-            const btn = document.getElementById('btn-login');
-            btn.innerText = "Invio...";
+            const btn = document.getElementById('btn');
+            
+            if(!email) return alert("Metti la mail!");
+            
+            btn.innerText = "Invio in corso...";
             btn.disabled = true;
 
-            const { error } = await window.sb.auth.signInWithOtp({ 
-                email: email,
-                options: { emailRedirectTo: window.location.origin }
-            });
-
-            if (error) {
-                alert("Errore: " + error.message);
-                btn.innerText = "RICEVI LINK MAGICO";
+            try {
+                const res = await fetch('/api/auth', {
+                    method: 'POST',
+                    body: JSON.stringify({ email: email })
+                });
+                
+                if (res.ok) {
+                    alert("✅ Mail inviata! Controlla la posta.");
+                } else {
+                    alert("❌ Errore del server. Riprova tra poco.");
+                }
+            } catch (e) {
+                alert("❌ Errore di connessione: " + e.message);
+            } finally {
+                btn.innerText = "ACCEDI ORA";
                 btn.disabled = false;
-            } else {
-                alert("CONTROLLA LA MAIL! Se non arriva entro 2 minuti, guarda nello SPAM.");
-                btn.innerText = "Email inviata ✅";
             }
         }
     </script>
