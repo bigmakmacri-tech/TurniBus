@@ -3,63 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TurniBus - Login</title>
+    <title>TurniBus Test</title>
+    <!-- Carichiamo Supabase in modo più sicuro -->
     <script src="https://cdn.jsdelivr.net"></script>
-    <style>
-        body { font-family: sans-serif; padding: 20px; text-align: center; }
-        input { padding: 10px; margin: 10px; width: 80%; max-width: 300px; }
-        button { padding: 10px 20px; background: #3ecf8e; color: white; border: none; border-radius: 5px; }
-    </style>
 </head>
 <body>
     <h1>TurniBus 🚌</h1>
     
-    <div id="login-form">
-        <input type="email" id="email" placeholder="Inserisci la tua email">
-        <button onclick="login()">Ricevi link di accesso</button>
+    <div id="status">Verifica connessione...</div>
+
+    <div id="login-form" style="margin-top: 20px;">
+        <input type="email" id="email" placeholder="latua@email.it" style="padding:10px; width:200px;">
+        <button id="btn-login" onclick="login()">PROVA LOGIN</button>
     </div>
 
-    <div id="dashboard" style="display:none;">
-        <p>✅ Sei loggato come: <strong id="user-email"></strong></p>
-        <button onclick="logout()" style="background:#ff4b4b">Esci</button>
+    <div id="dashboard" style="display:none; color: green; font-weight: bold;">
+        <p>SEI DENTRO!</p>
+        <button onclick="sb.auth.signOut().then(() => location.reload())">ESCI</button>
     </div>
 
     <script>
+        // 1. Controllo immediato se la libreria esiste
+        const statusDiv = document.getElementById('status');
+        
+        if (typeof supabase === 'undefined') {
+            statusDiv.innerHTML = "❌ ERRORE: Libreria Supabase non caricata!";
+            statusDiv.style.color = "red";
+        } else {
+            statusDiv.innerHTML = "✅ Sistema pronto. Inserisci la mail.";
+            statusDiv.style.color = "blue";
+        }
+
         const URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
         const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
+        
+        // Inizializzazione
         const sb = supabase.createClient(URL, KEY);
 
         async function login() {
-    const email = document.getElementById('email').value;
-    console.log("Tentativo login per:", email); // Debug
-    
-    const { data, error } = await sb.auth.signInWithOtp({ 
-        email: email,
-        options: { 
-            emailRedirectTo: window.location.origin 
-        } 
-    });
+            const emailInput = document.getElementById('email').value;
+            const btn = document.getElementById('btn-login');
+            
+            if(!emailInput) {
+                alert("Metti la mail!");
+                return;
+            }
 
-    if (error) {
-        alert("Errore Supabase: " + error.message);
-        console.error(error);
-    } else {
-        alert("Mail inviata con successo a: " + email);
-    }
+            btn.innerText = "Invio in corso...";
+            btn.disabled = true;
+
+            try {
+                const { error } = await sb.auth.signInWithOtp({ 
+                    email: emailInput,
+                    options: { emailRedirectTo: window.location.origin }
+                });
+
+                if (error) {
+                    alert("Errore Supabase: " + error.message);
+                } else {
+                    alert("MAIL INVIATA! Controlla la posta (anche spam).");
+                }
+            } catch (err) {
+                alert("Errore fatale: " + err.message);
+            } finally {
+                btn.innerText = "PROVA LOGIN";
+                btn.disabled = false;
+            }
         }
-        
 
-        async function logout() {
-            await sb.auth.signOut();
-            window.location.reload();
-        }
-
-        // Gestisce il login automatico al ritorno dalla mail
+        // Controllo sessione
         sb.auth.onAuthStateChange((event, session) => {
             if (session) {
                 document.getElementById('login-form').style.display = 'none';
                 document.getElementById('dashboard').style.display = 'block';
-                document.getElementById('user-email').innerText = session.user.email;
+                statusDiv.innerHTML = "Logged come: " + session.user.email;
             }
         });
     </script>
