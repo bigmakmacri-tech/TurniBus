@@ -2,38 +2,61 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>TurniBus</title>
-    <!-- Caricamento classico -->
-    <script src="https://unpkg.com"></script>
-</head>
-<body>
-    <h1>TurniBus 🚌</h1>
-    <p id="status">Connessione in corso...</p>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TurniBus 🚌</title>
     
-    <div id="login-form">
-        <input type="email" id="email" placeholder="latua@email.it">
-        <button onclick="login()">INVIA LINK</button>
+    <!-- Tentativo 1: UNPKG -->
+    <script src="https://unpkg.com"></script>
+    
+    <!-- Tentativo 2 (di riserva): JSDELIVR (se il primo fallisce) -->
+    <script>
+        if (typeof supabase === 'undefined') {
+            var script = document.createElement('script');
+            script.src = "https://cdn.jsdelivr.net";
+            document.head.appendChild(script);
+        }
+    </script>
+</head>
+<body style="font-family: sans-serif; text-align: center; padding: 50px;">
+    <h1>TurniBus 🚌</h1>
+    <p id="status">Verifica in corso...</p>
+    
+    <div id="login-section" style="display:none;">
+        <input type="email" id="email" placeholder="latua@email.it" style="padding: 10px; width: 250px;">
+        <br><br>
+        <button id="btn-login" onclick="login()" style="padding: 10px 20px; cursor: pointer;">INVIA LINK MAGICO</button>
     </div>
 
     <script>
-        // Verifichiamo subito se supabase esiste
-        if (typeof supabase === 'undefined') {
-            document.getElementById('status').innerText = "❌ Errore Caricamento Libreria";
-        } else {
-            const URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
-            const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
-            const sb = supabase.createClient(URL, KEY);
-            document.getElementById('status').innerText = "✅ Sistema Pronto";
-
-            window.login = async () => {
-                const email = document.getElementById('email').value;
-                const { error } = await sb.auth.signInWithOtp({ 
-                    email: email,
-                    options: { emailRedirectTo: window.location.origin }
-                });
-                if (error) alert("Errore: " + error.message);
-                else alert("Controlla la mail!");
+        // Funzione per inizializzare Supabase quando la libreria è pronta
+        function initApp() {
+            if (typeof supabase !== 'undefined') {
+                const URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
+                const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
+                
+                window.sb = supabase.createClient(URL, KEY);
+                
+                document.getElementById('status').innerHTML = "<span style='color:green'>✅ Sistema Pronto!</span>";
+                document.getElementById('login-section').style.display = 'block';
+            } else {
+                document.getElementById('status').innerHTML = "<span style='color:red'>❌ Errore: La libreria Supabase non carica.<br>Controlla se hai estensioni (AdBlock) che bloccano gli script.</span>";
             }
+        }
+
+        // Aspettiamo 2 secondi per dare tempo alla libreria di caricare
+        setTimeout(initApp, 2000);
+
+        async function login() {
+            const emailInput = document.getElementById('email').value;
+            if (!emailInput) { alert("Inserisci la mail!"); return; }
+
+            const { error } = await window.sb.auth.signInWithOtp({ 
+                email: emailInput,
+                options: { emailRedirectTo: window.location.origin }
+            });
+
+            if (error) alert("Errore Supabase: " + error.message);
+            else alert("Email inviata! Controlla la posta.");
         }
     </script>
 </body>
