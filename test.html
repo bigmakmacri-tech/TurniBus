@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TurniBus Pro 🚌</title>
+    <style>
+        body { font-family: sans-serif; background: #f0f4f8; padding: 15px; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 450px; margin: auto; }
+        .ripresa { background: #f9f9f9; border-left: 4px solid #28a745; padding: 10px; margin: 10px 0; border-radius: 5px; position: relative; }
+        input, textarea { width: 100%; padding: 10px; margin: 5px 0 10px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        .flex { display: flex; gap: 10px; }
+        .flex div { flex: 1; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-add { background: #007bff; color: white; }
+        .btn-save { background: #28a745; color: white; font-size: 1.1rem; }
+        .btn-del { background: #dc3545; color: white; width: auto; padding: 5px 10px; font-size: 12px; position: absolute; right: 5px; top: 5px; }
+        #totale-badge { background: #343a40; color: white; padding: 10px; border-radius: 8px; margin: 15px 0; font-size: 1.1rem; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Nuovo Turno Spezzato 🚌</h2>
+    
+    <label>Data del servizio:</label>
+    <input type="date" id="data-servizio">
+
+    <div id="contenitore-riprese">
+        <!-- Le riprese vengono inserite qui -->
+    </div>
+
+    <button class="btn-add" onclick="aggiungiRipresa()">➕ Aggiungi Ripresa</button>
+
+    <div id="totale-badge">Ore Lavorate: 0h 0m</div>
+
+    <label>Note Generali:</label>
+    <textarea id="note-turno" rows="2" placeholder="Note su ritardi, guasti, ecc..."></textarea>
+
+    <button class="btn-save" onclick="inviaDati()" id="btn-invia">💾 SALVA NEL FOGLIO</button>
+</div>
+
+<script>
+    const URL_GOOGLE = "https://script.google.com";
+    
+    // Imposta data oggi
+    document.getElementById('data-servizio').valueAsDate = new Date();
+
+    function aggiungiRipresa() {
+        const div = document.createElement('div');
+        div.className = 'ripresa';
+        div.innerHTML = `
+            <button class="btn-del" onclick="this.parentElement.remove(); calcolaOre();">X</button>
+            <div class="flex">
+                <div><label>Linea</label><input type="text" class="linea" placeholder="es. 10"></div>
+                <div><label>Vettura</label><input type="text" class="vettura" placeholder="es. 405"></div>
+            </div>
+            <div class="flex">
+                <div><label>Inizio</label><input type="time" class="inizio" onchange="calcolaOre()"></div>
+                <div><label>Fine</label><input type="time" class="fine" onchange="calcolaOre()"></div>
+            </div>
+        `;
+        document.getElementById('contenitore-riprese').appendChild(div);
+    }
+
+    function calcolaOre() {
+        let minutiTotali = 0;
+        const blocchi = document.querySelectorAll('.ripresa');
+        blocchi.forEach(b => {
+            const i = b.querySelector('.inizio').value;
+            const f = b.querySelector('.fine').value;
+            if(i && f) {
+                const [hI, mI] = i.split(':').map(Number);
+                const [hF, mF] = f.split(':').map(Number);
+                let diff = (hF * 60 + mF) - (hI * 60 + mI);
+                if (diff < 0) diff += 1440; // Se finisce dopo mezzanotte
+                minutiTotali += diff;
+            }
+        });
+        const ore = Math.floor(minutiTotali / 60);
+        const min = minutiTotali % 60;
+        document.getElementById('totale-badge').innerText = `Ore Lavorate: ${ore}h ${min}m`;
+        return { testo: `${ore}:${min.toString().padStart(2, '0')}`, minutiTotali };
+    }
+
+    async function inviaDati() {
+        const blocchi = document.querySelectorAll('.ripresa');
+        if(blocchi.length === 0) return alert("Inserisci almeno una ripresa!");
+
+        const btn = document.getElementById('btn-invia');
+        btn.disabled = true;
+        btn.innerText = "Salvataggio...";
+
+        let resocontoLinee = "";
+        let primoInizio = "23:59";
+        let ultimaFine = "00:00";
+
+        blocchi.forEach((b, index) => {
+            const l = b.querySelector('.linea').value;
+            const v = b.querySelector('.vettura').value;
+            const i = b.querySelector('.inizio').value;
+            const f = b.querySelector('.fine').value;
+            
+            resocontoLinee += `[L:${l} V:${v} (${i}-${f})] `;
+            if(i < primoInizio) primoInizio = i;
+            if(f > ultimaFine) ultimaFine = f;
+        });
+
+        const oreCalcolate = calcolaOre().testo;
+
+        const payload = {
+            data: document.getElementById('data-servizio').value,
+            turno: resocontoLinee,
+            inizio: primoInizio,
+            fine: ultimaFine,
+            ore: oreCalcolate,
+            note: document.getElementById('note-turno').value
+        };
+
+        try {
+            await fetch(URL_GOOGLE, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+            alert("✅ Turno salvato correttamente!");
+            location.reload(); 
+        } catch (e) {
+            alert("Errore: " + e.message);
+            btn.disabled = false;
+            btn.innerText = "💾 SALVA NEL FOGLIO";
+        }
+    }
+
+    // Parte con una ripresa già visibile
+    aggiungiRipresa();
+</script>
+</body>
+</html>
