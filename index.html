@@ -4,40 +4,92 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurniBus 🚌</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f0f2f5; color: #333; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        h1 { color: #2c3e50; margin-bottom: 5px; }
+        p { color: #7f8c8d; margin-bottom: 20px; }
+        label { display: block; text-align: left; margin-left: 5%; font-weight: bold; font-size: 14px; color: #34495e; }
+        input { width: 90%; padding: 12px; margin: 8px 0 20px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
+        button { width: 90%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 18px; cursor: pointer; transition: 0.3s; }
+        button:disabled { background: #95a5a6; }
+        #status { margin-top: 15px; font-weight: bold; }
+    </style>
 </head>
-<body style="font-family:sans-serif; text-align:center; padding:50px;">
-    <h1>TurniBus 🚌</h1>
-    <p>Inserisci la mail per accedere:</p>
-    
-    <input type="email" id="email" placeholder="latua@email.it" style="padding:12px; width:250px;">
-    <br><br>
-    <button onclick="login()" id="btn" style="padding:10px 20px; cursor:pointer;">ACCEDI</button>
+<body>
+
+    <div class="card">
+        <h1>TurniBus 🚌</h1>
+        <p>Registra il tuo turno</p>
+        
+        <label>Data:</label>
+        <input type="date" id="data">
+
+        <label>Nome Turno (es. Linea 10):</label>
+        <input type="text" id="turno" placeholder="Inserisci nome turno">
+
+        <label>Ora Inizio:</label>
+        <input type="time" id="inizio">
+
+        <label>Ora Fine:</label>
+        <input type="time" id="fine">
+        
+        <button onclick="salvaTurno()" id="btn">SALVA TURNO</button>
+        <p id="status"></p>
+    </div>
 
     <script>
-        async function login() {
-            const email = document.getElementById('email').value;
-            const btn = document.getElementById('btn');
-            if(!email) return alert("Metti la mail!");
+        // Il tuo URL di Google già configurato
+        const GOOGLE_URL = "https://script.google.com";
 
-            btn.innerText = "Invio...";
+        // Imposta la data di oggi in automatico
+        document.getElementById('data').valueAsDate = new Date();
+
+        async function salvaTurno() {
+            const btn = document.getElementById('btn');
+            const status = document.getElementById('status');
+            
+            // Raccolta dati
+            const payload = {
+                data: document.getElementById('data').value,
+                turno: document.getElementById('turno').value,
+                inizio: document.getElementById('inizio').value,
+                fine: document.getElementById('fine').value,
+                ore: "" // Per ora vuoto, lo calcoleremo poi
+            };
+
+            // Validazione minima
+            if (!payload.data || !payload.turno || !payload.inizio || !payload.fine) {
+                alert("Per favore, compila tutti i campi!");
+                return;
+            }
+
             btn.disabled = true;
+            status.innerText = "⏳ Invio al foglio Google...";
+            status.style.color = "orange";
 
             try {
-                // Parliamo con la nostra API su Vercel
-                const res = await fetch('/api/auth', {
+                // Invio dati tramite fetch
+                await fetch(GOOGLE_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ email: email })
+                    mode: 'no-cors', // Fondamentale per evitare errori di sicurezza
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
+
+                // Messaggio di successo
+                alert("✅ Turno salvato con successo!");
+                status.innerText = "Ricevuto! Turno registrato.";
+                status.style.color = "green";
                 
-                if (res.ok) {
-                    alert("✅ Se la mail è corretta, riceverai il link a breve!");
-                } else {
-                    alert("❌ Errore durante l'invio. Riprova.");
-                }
+                // Pulisce i campi turno e ore per il prossimo inserimento
+                document.getElementById('turno').value = "";
+                document.getElementById('inizio').value = "";
+                document.getElementById('fine').value = "";
             } catch (e) {
-                alert("❌ Errore di connessione: " + e.message);
-            } finally {
-                btn.innerText = "ACCEDI";
+                alert("❌ Errore durante il salvataggio: " + e.message);
+                status.innerText = "Errore. Riprova.";
+                status.style.color = "red";
                 btn.disabled = false;
             }
         }
