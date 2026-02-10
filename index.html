@@ -1,70 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurniBus</title>
-    <!-- Caricamento moderno via Modulo -->
-    <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net'
-        
-        const URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
-        const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
-        
-        // Creiamo il client e lo rendiamo usabile in tutta la pagina
-        const sb = createClient(URL, KEY);
-        window.sb = sb; 
-
-        // Notifichiamo che il sistema è pronto
-        document.getElementById('status').innerHTML = "✅ Sistema pronto!";
-        document.getElementById('status').style.color = "blue";
-
-        // Controlliamo se l'utente è già loggato
-        const checkUser = async () => {
-            const { data } = await sb.auth.getSession();
-            if (data.session) {
-                mostraDashboard(data.session.user.email);
-            }
-        };
-        checkUser();
-
-        // Rendiamo la funzione login disponibile al bottone
-        window.login = async () => {
-            const email = document.getElementById('email').value;
-            const btn = document.getElementById('btn-login');
-            btn.innerText = "Inviando...";
-            
-            const { error } = await sb.auth.signInWithOtp({ 
-                email,
-                options: { emailRedirectTo: window.location.origin }
-            });
-
-            if (error) alert("Errore: " + error.message);
-            else alert("Mail inviata! Controlla la posta.");
-            btn.innerText = "PROVA LOGIN";
-        };
-
-        function mostraDashboard(email) {
-            document.getElementById('login-form').style.display = 'none';
-            document.getElementById('dashboard').style.display = 'block';
-            document.getElementById('user-email').innerText = email;
-        }
-    </script>
+    <!-- Caricamento classico -->
+    <script src="https://unpkg.com"></script>
 </head>
 <body>
     <h1>TurniBus 🚌</h1>
+    <p id="status">Connessione in corso...</p>
     
-    <div id="status">Verifica caricamento...</div>
-
-    <div id="login-form" style="margin-top: 20px;">
-        <input type="email" id="email" placeholder="latua@email.it" style="padding:10px; width:200px;">
-        <button id="btn-login" onclick="login()">PROVA LOGIN</button>
+    <div id="login-form">
+        <input type="email" id="email" placeholder="latua@email.it">
+        <button onclick="login()">INVIA LINK</button>
     </div>
 
-    <div id="dashboard" style="display:none; color: green; font-weight: bold; margin-top: 20px;">
-        <p>SEI DENTRO!</p>
-        <p>Email: <span id="user-email"></span></p>
-        <button onclick="sb.auth.signOut().then(() => location.reload())">ESCI</button>
-    </div>
+    <script>
+        // Verifichiamo subito se supabase esiste
+        if (typeof supabase === 'undefined') {
+            document.getElementById('status').innerText = "❌ Errore Caricamento Libreria";
+        } else {
+            const URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
+            const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
+            const sb = supabase.createClient(URL, KEY);
+            document.getElementById('status').innerText = "✅ Sistema Pronto";
+
+            window.login = async () => {
+                const email = document.getElementById('email').value;
+                const { error } = await sb.auth.signInWithOtp({ 
+                    email: email,
+                    options: { emailRedirectTo: window.location.origin }
+                });
+                if (error) alert("Errore: " + error.message);
+                else alert("Controlla la mail!");
+            }
+        }
+    </script>
 </body>
 </html>
