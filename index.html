@@ -2,71 +2,30 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TurniBus 🚌</title>
-    <!-- Usiamo UNPKG invece di JSDELIVR per evitare il blocco CORS -->
-    <script src="https://unpkg.com"></script>
+    <title>TurniBus</title>
 </head>
-<body style="font-family:sans-serif; text-align:center; padding:50px; background:#f0f2f5;">
-    <div style="background:white; padding:30px; border-radius:15px; display:inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-        <h1>TurniBus 🚌</h1>
-        <p id="status">Verifica sistema...</p>
-        
-        <div id="login-box" style="display:none;">
-            <input type="email" id="email" placeholder="latua@email.it" style="padding:12px; width:250px; border:1px solid #ddd; border-radius:8px;">
-            <br><br>
-            <button onclick="inviaMail()" id="btn" style="padding:12px 25px; background:#3ecf8e; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size:16px;">
-                ACCEDI ORA
-            </button>
-        </div>
-    </div>
+<body style="font-family:sans-serif; text-align:center; padding:50px;">
+    <h1>TurniBus 🚌</h1>
+    <input type="email" id="email" placeholder="latua@email.it" style="padding:10px;">
+    <button id="btn">ACCEDI ORA</button>
 
-    <script>
+    <script type="module">
+        // Importiamo Supabase come modulo diretto (bypass firewall)
+        import { createClient } from 'https://cdn.skypack.dev';
+
         const URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
         const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
-        let sb;
+        const sb = createClient(URL, KEY);
 
-        // Controlliamo se la libreria è carica
-        window.onload = function() {
-            if (typeof supabase !== 'undefined') {
-                sb = supabase.createClient(URL, KEY);
-                document.getElementById('status').innerHTML = "✅ Sistema Pronto";
-                document.getElementById('status').style.color = "green";
-                document.getElementById('login-box').style.display = 'block';
-            } else {
-                document.getElementById('status').innerHTML = "❌ Errore: Connessione protetta.<br>Prova a ricaricare la pagina.";
-                document.getElementById('status').style.color = "red";
-            }
-        };
-
-        async function inviaMail() {
+        document.getElementById('btn').onclick = async () => {
             const email = document.getElementById('email').value;
-            const btn = document.getElementById('btn');
-            if(!email) return alert("Metti la mail!");
-
-            btn.innerText = "Inviando...";
-            btn.disabled = true;
-
-            try {
-                const { error } = await sb.auth.signInWithOtp({
-                    email: email,
-                    options: { emailRedirectTo: window.location.origin }
-                });
-
-                if (error) {
-                    alert("Errore: " + error.message);
-                    btn.innerText = "ACCEDI ORA";
-                    btn.disabled = false;
-                } else {
-                    alert("✅ CONTROLLA LA MAIL!\nSe non la vedi, guarda in SPAM.");
-                    btn.innerText = "Email Inviata!";
-                }
-            } catch (err) {
-                alert("Errore tecnico: " + err.message);
-                btn.disabled = false;
-                btn.innerText = "ACCEDI ORA";
-            }
-        }
+            const { error } = await sb.auth.signInWithOtp({ 
+                email,
+                options: { emailRedirectTo: window.location.origin }
+            });
+            if (error) alert("Errore: " + error.message);
+            else alert("✅ Mail inviata! Controlla ora.");
+        };
     </script>
 </body>
 </html>
