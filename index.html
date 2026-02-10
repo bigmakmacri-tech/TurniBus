@@ -1,132 +1,57 @@
 <!DOCTYPE html>
-<html lang="it">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TurniBus 🚌</title>
+    <title>TurniBus - Login</title>
     <script src="https://cdn.jsdelivr.net"></script>
     <style>
-        body { font-family: sans-serif; padding: 15px; background: #f4f4f9; max-width: 500px; margin: auto; }
-        .tab { display: none; }
-        .active { display: block; }
-        nav { display: flex; gap: 8px; margin-bottom: 20px; }
-        button { padding: 12px; border-radius: 8px; border: none; background: #007bff; color: white; font-weight: bold; cursor: pointer; width: 100%; }
-        input { display: block; margin: 10px 0; padding: 12px; width: 100%; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
-        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 0.85em; }
+        body { font-family: sans-serif; padding: 20px; text-align: center; }
+        input { padding: 10px; margin: 10px; width: 80%; max-width: 300px; }
+        button { padding: 10px 20px; background: #3ecf8e; color: white; border: none; border-radius: 5px; }
     </style>
 </head>
 <body>
-
-    <h1 style="text-align: center; color: #007bff;">TurniBus 🚌</h1>
-
-    <!-- SEZIONE AUTH -->
-    <div id="auth-section" class="card">
-        <div id="login-form">
-            <input type="email" id="email" placeholder="latua@email.com">
-            <button onclick="loginGoogle()" style="background: #4285F4; margin-bottom: 10px;">Accedi con Google</button>
-            <button onclick="loginEmail()">Magic Link Email</button>
-        </div>
-        <div id="user-info" style="display: none;">
-            <p>Ciao, <strong id="user-display"></strong></p>
-            <button onclick="logout()" style="background: #dc3545; width: auto; font-size: 0.8em;">Esci</button>
-        </div>
+    <h1>TurniBus 🚌</h1>
+    
+    <div id="login-form">
+        <input type="email" id="email" placeholder="Inserisci la tua email">
+        <button onclick="login()">Ricevi link di accesso</button>
     </div>
 
-    <!-- APP CONTENT -->
-    <div id="app-content" style="display: none;">
-        <nav>
-            <button onclick="showTab('turni')">➕ Turni</button>
-            <button onclick="showTab('monteore')">📊 Ore</button>
-            <button onclick="showTab('bustepaga')">💰 Buste</button>
-        </nav>
-
-        <!-- TURNI -->
-        <div id="turni" class="tab active">
-            <div class="card">
-                <input type="date" id="dataTurno">
-                <div id="containerRiprese">
-                    <div class="ripresa">
-                        <input type="text" class="linea" placeholder="Linea">
-                        <div style="display:flex; gap:5px;">
-                            <input type="time" class="inizio">
-                            <input type="time" class="fine">
-                        </div>
-                    </div>
-                </div>
-                <button onclick="salva('Lavoro')" style="background: #28a745;">Salva Lavoro</button>
-            </div>
-        </div>
-
-        <!-- MONTE ORE -->
-        <div id="monteore" class="tab">
-            <div id="lista-turni" class="card">Caricamento...</div>
-        </div>
-
-        <!-- BUSTE PAGA -->
-        <div id="bustepaga" class="tab">
-            <div class="card">
-                <table>
-                    <tr><th>Mese</th><th>Netto (€)</th></tr>
-                    <script>
-                        const mesi = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
-                        mesi.forEach(m => document.write(`<tr><td>${m}</td><td><input type="number" style="width:80px; padding:4px;"></td></tr>`));
-                    </script>
-                </table>
-            </div>
-        </div>
+    <div id="dashboard" style="display:none;">
+        <p>✅ Sei loggato come: <strong id="user-email"></strong></p>
+        <button onclick="logout()" style="background:#ff4b4b">Esci</button>
     </div>
 
     <script>
-        const S_URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
-        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
-        const _supabase = supabase.createClient(S_URL, S_KEY);
+        const URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
+        const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
+        const sb = supabase.createClient(URL, KEY);
 
-        _supabase.auth.onAuthStateChanged((event, session) => {
+        async function login() {
+            const email = document.getElementById('email').value;
+            const { error } = await sb.auth.signInWithOtp({ 
+                email,
+                options: { emailRedirectTo: window.location.href } 
+            });
+            if (error) alert("Errore: " + error.message);
+            else alert("Controlla la mail! Clicca sul link che ti è arrivato.");
+        }
+
+        async function logout() {
+            await sb.auth.signOut();
+            window.location.reload();
+        }
+
+        // Gestisce il login automatico al ritorno dalla mail
+        sb.auth.onAuthStateChange((event, session) => {
             if (session) {
                 document.getElementById('login-form').style.display = 'none';
-                document.getElementById('user-info').style.display = 'block';
-                document.getElementById('app-content').style.display = 'block';
-                document.getElementById('user-display').innerText = session.user.email;
+                document.getElementById('dashboard').style.display = 'block';
+                document.getElementById('user-email').innerText = session.user.email;
             }
         });
-
-        async function loginGoogle() { await _supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } }); }
-        async function loginEmail() { 
-            const email = document.getElementById('email').value;
-            await _supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } }); 
-            alert("Controlla la mail!");
-        }
-        async function logout() { await _supabase.auth.signOut(); window.location.reload(); }
-
-        function showTab(id) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            if (id === 'monteore') caricaTurni();
-        }
-
-        async function salva(tipo) {
-            const date = document.getElementById('dataTurno').value;
-            const { data: { user } } = await _supabase.auth.getUser();
-            const ripresa = document.querySelector('.ripresa');
-            const h1 = ripresa.querySelector('.inizio').value;
-            const h2 = ripresa.querySelector('.fine').value;
-            const diff = (new Date(`1970-01-01T${h2}`) - new Date(`1970-01-01T${h1}`)) / 3600000;
-
-            const { error } = await _supabase.from('shifts').insert([{
-                user_id: user.id, date: date, type: tipo, total_hours: diff.toFixed(2)
-            }]);
-            if (error) alert(error.message); else { alert("Salvato!"); showTab('monteore'); }
-        }
-
-        async function caricaTurni() {
-            const { data: { user } } = await _supabase.auth.getUser();
-            const { data } = await _supabase.from('shifts').select('*').eq('user_id', user.id).order('date', { ascending: false });
-            let html = '<table><tr><th>Data</th><th>Ore</th></tr>';
-            data.forEach(t => html += `<tr><td>${t.date}</td><td>${t.total_hours}h</td></tr>`);
-            document.getElementById('lista-turni').innerHTML = html + '</table>';
-        }
     </script>
 </body>
 </html>
