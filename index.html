@@ -4,59 +4,68 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurniBus 🚌</title>
-    
-    <!-- Tentativo 1: UNPKG -->
-    <script src="https://unpkg.com"></script>
-    
-    <!-- Tentativo 2 (di riserva): JSDELIVR (se il primo fallisce) -->
-    <script>
-        if (typeof supabase === 'undefined') {
-            var script = document.createElement('script');
-            script.src = "https://cdn.jsdelivr.net";
-            document.head.appendChild(script);
-        }
-    </script>
+    <!-- CARICAMENTO FORZATO: Inseriamo la libreria direttamente nel file -->
+    <script src="https://cdn.jsdelivr.net"></script>
 </head>
-<body style="font-family: sans-serif; text-align: center; padding: 50px;">
-    <h1>TurniBus 🚌</h1>
-    <p id="status">Verifica in corso...</p>
-    
-    <div id="login-section" style="display:none;">
-        <input type="email" id="email" placeholder="latua@email.it" style="padding: 10px; width: 250px;">
-        <br><br>
-        <button id="btn-login" onclick="login()" style="padding: 10px 20px; cursor: pointer;">INVIA LINK MAGICO</button>
+<body style="font-family: sans-serif; text-align: center; padding: 50px; background: #f4f7f6;">
+    <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: inline-block;">
+        <h1>TurniBus 🚌</h1>
+        <p id="status" style="color: orange;">Inizializzazione in corso...</p>
+        
+        <div id="login-section" style="display:none; margin-top: 20px;">
+            <input type="email" id="email" placeholder="latua@email.it" style="padding: 12px; width: 250px; border: 1px solid #ccc; border-radius: 5px;">
+            <br><br>
+            <button id="btn-login" onclick="login()" style="padding: 12px 25px; background: #3ecf8e; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                RICEVI LINK MAGICO
+            </button>
+        </div>
     </div>
 
     <script>
-        // Funzione per inizializzare Supabase quando la libreria è pronta
-        function initApp() {
+        // Funzione di controllo critico
+        function checkAndStart() {
+            const statusEl = document.getElementById('status');
+            const loginSection = document.getElementById('login-section');
+
             if (typeof supabase !== 'undefined') {
+                statusEl.innerHTML = "✅ Sistema Pronto!";
+                statusEl.style.color = "green";
+                loginSection.style.display = 'block';
+
                 const URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
                 const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
                 
                 window.sb = supabase.createClient(URL, KEY);
-                
-                document.getElementById('status').innerHTML = "<span style='color:green'>✅ Sistema Pronto!</span>";
-                document.getElementById('login-section').style.display = 'block';
             } else {
-                document.getElementById('status').innerHTML = "<span style='color:red'>❌ Errore: La libreria Supabase non carica.<br>Controlla se hai estensioni (AdBlock) che bloccano gli script.</span>";
+                statusEl.innerHTML = "❌ Errore critico: Browser blocca Supabase.<br>Prova a cambiare browser (es. Chrome o Edge) o usa una scheda in incognito.";
+                statusEl.style.color = "red";
             }
         }
 
-        // Aspettiamo 2 secondi per dare tempo alla libreria di caricare
-        setTimeout(initApp, 2000);
+        // Avvio ritardato per sicurezza
+        setTimeout(checkAndStart, 1500);
 
         async function login() {
-            const emailInput = document.getElementById('email').value;
-            if (!emailInput) { alert("Inserisci la mail!"); return; }
+            const email = document.getElementById('email').value;
+            if (!email) { alert("Inserisci la mail!"); return; }
+
+            const btn = document.getElementById('btn-login');
+            btn.innerText = "Invio...";
+            btn.disabled = true;
 
             const { error } = await window.sb.auth.signInWithOtp({ 
-                email: emailInput,
+                email: email,
                 options: { emailRedirectTo: window.location.origin }
             });
 
-            if (error) alert("Errore Supabase: " + error.message);
-            else alert("Email inviata! Controlla la posta.");
+            if (error) {
+                alert("Errore: " + error.message);
+                btn.innerText = "RICEVI LINK MAGICO";
+                btn.disabled = false;
+            } else {
+                alert("CONTROLLA LA MAIL! Se non arriva entro 2 minuti, guarda nello SPAM.");
+                btn.innerText = "Email inviata ✅";
+            }
         }
     </script>
 </body>
