@@ -1,47 +1,58 @@
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurniBus 🚌</title>
-</head>
-<body style="font-family:sans-serif; text-align:center; padding:50px;">
-    <h1>TurniBus 🚌</h1>
-    <p>Inserisci la mail per accedere:</p>
-    
-    <input type="email" id="email" placeholder="latua@email.it" style="padding:10px; width:250px;">
-    <button onclick="inviaMail()" id="btn" style="padding:10px; background:#3ecf8e; color:white; border:none; border-radius:5px; cursor:pointer;">
-        ACCEDI ORA
-    </button>
+    <!-- Caricamento tramite modulo ufficiale, più difficile da bloccare -->
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net'
+        
+        const URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
+        const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
+        const sb = createClient(URL, KEY);
 
-    <script>
-        async function inviaMail() {
+        // Rendiamo la funzione disponibile al bottone
+        window.inviaMail = async () => {
             const email = document.getElementById('email').value;
             const btn = document.getElementById('btn');
-            
-            if(!email) return alert("Metti la mail!");
-            
-            btn.innerText = "Invio in corso...";
+            if(!email) return alert("Inserisci la mail!");
+
+            btn.innerText = "Inviando...";
             btn.disabled = true;
 
-            try {
-                const res = await fetch('/api/auth', {
-                    method: 'POST',
-                    body: JSON.stringify({ email: email })
-                });
-                
-                if (res.ok) {
-                    alert("✅ Mail inviata! Controlla la posta.");
-                } else {
-                    alert("❌ Errore del server. Riprova tra poco.");
-                }
-            } catch (e) {
-                alert("❌ Errore di connessione: " + e.message);
-            } finally {
+            const { error } = await sb.auth.signInWithOtp({
+                email: email,
+                options: { emailRedirectTo: window.location.origin }
+            });
+
+            if (error) {
+                alert("Errore: " + error.message);
                 btn.innerText = "ACCEDI ORA";
                 btn.disabled = false;
+            } else {
+                alert("✅ MAIL INVIATA! Controlla la posta.");
+                btn.innerText = "Inviata!";
             }
-        }
+        };
+
+        // Controllo se l'utente è già loggato
+        sb.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                document.body.innerHTML = `<h1>Benvenuto!</h1><p>Sei loggato come ${session.user.email}</p>`;
+            }
+        });
     </script>
+</head>
+<body style="font-family:sans-serif; text-align:center; padding:50px; background:#eee;">
+    <div style="background:white; padding:30px; border-radius:10px; display:inline-block; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h1>TurniBus 🚌</h1>
+        <p>Inserisci la tua mail:</p>
+        <input type="email" id="email" placeholder="latua@email.it" style="padding:10px; width:250px;">
+        <br><br>
+        <button onclick="window.inviaMail()" id="btn" style="padding:10px 20px; background:#3ecf8e; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">
+            ACCEDI ORA
+        </button>
+    </div>
 </body>
 </html>
