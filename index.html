@@ -1,62 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurniBus 🚌</title>
 </head>
 <body style="font-family:sans-serif; text-align:center; padding:50px;">
     <h1>TurniBus 🚌</h1>
-    <p>Accesso d'emergenza (No-Library Mode)</p>
+    <p>Inserisci la mail per accedere:</p>
     
-    <div style="background:#f9f9f9; padding:20px; border-radius:10px; display:inline-block; border:1px solid #ccc;">
-        <input type="email" id="email" placeholder="latua@email.it" style="padding:10px; width:200px;">
-        <button onclick="login()" id="btn" style="padding:10px; cursor:pointer;">ACCEDI</button>
-    </div>
-    <p id="status"></p>
+    <input type="email" id="email" placeholder="latua@email.it" style="padding:12px; width:250px;">
+    <br><br>
+    <button onclick="login()" id="btn" style="padding:10px 20px; cursor:pointer;">ACCEDI</button>
 
     <script>
         async function login() {
             const email = document.getElementById('email').value;
             const btn = document.getElementById('btn');
-            const status = document.getElementById('status');
-            
-            if(!email) return alert("Inserisci la mail");
+            if(!email) return alert("Metti la mail!");
 
+            btn.innerText = "Invio...";
             btn.disabled = true;
-            status.innerText = "Tentativo di invio...";
-
-            // DATI DEL TUO PROGETTO
-            const URL = 'https://dvcoszwhurmseubyyxel.supabase.co';
-            const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y29zendodXJtc2V1Ynl5eGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NjEzMjUsImV4cCI6MjA4NjIzNzMyNX0.iBf-rl27gn3GhcK3BasTAQCUCydIc7edIDHCpY97j9Y';
 
             try {
-                // Parliamo direttamente con Supabase senza librerie intermedie
-                const response = await fetch(URL, {
+                // Parliamo con la nostra API su Vercel
+                const res = await fetch('/api/auth', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': KEY,
-                        'Authorization': 'Bearer ' + KEY
-                    },
-                    body: JSON.stringify({
-                        email: email,
-                        create_user: true
-                    })
+                    body: JSON.stringify({ email: email })
                 });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    alert("✅ GRANDE! La richiesta è passata. Controlla la mail!");
-                    status.innerText = "Mail inviata correttamente.";
+                
+                if (res.ok) {
+                    alert("✅ Se la mail è corretta, riceverai il link a breve!");
                 } else {
-                    alert("Errore Supabase: " + (data.msg || data.error_description));
-                    status.innerText = "Errore: " + data.msg;
+                    alert("❌ Errore durante l'invio. Riprova.");
                 }
-            } catch (err) {
-                alert("❌ BLOCCO DI RETE: Il tuo browser impedisce la connessione a Supabase.");
-                status.innerText = "La tua rete blocca Supabase. Prova dal telefono (senza Wi-Fi).";
+            } catch (e) {
+                alert("❌ Errore di connessione: " + e.message);
             } finally {
+                btn.innerText = "ACCEDI";
                 btn.disabled = false;
             }
         }
